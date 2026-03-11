@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-111111.svg)
 ![Skill](https://img.shields.io/badge/Copilot-Skill-0A66C2.svg)
-![Output](https://img.shields.io/badge/output-Markdown%20%2B%20Notes%20%2B%20Assets-0F766E.svg)
+![Output](https://img.shields.io/badge/output-2%20Markdown%20%2B%20Assets-0F766E.svg)
 
 如果你试过让大模型“全文翻译一篇论文”，大概率见过这些问题：
 
@@ -16,41 +16,55 @@
 
 这个 skill 的目标很直接：**不是帮你“概括一篇论文”，而是尽可能保真地把整篇论文重建成中文 Markdown，并额外产出一份研究笔记。**
 
+现在它的默认文件组织方式也更严格：**先创建一个以论文名称命名的目录，把原论文剪切进去，然后把 full.md、notes.md 和 assets 全部放进这个目录。**
+
+现在它还附带一个增强能力：**剥洋葱式文献导读（Onion-Peeling Paper Guide）**。这部分会直接写进全文翻译文件里，用“实际问题 -> 生活隐喻 -> 核心公式 -> 剩余推导补全”的顺序，把论文讲透，但不会额外新增第三个 md。
+
 ## 为什么这个项目值得 Star
 
 - **不是摘要翻译，而是全文级处理**：面向整篇论文，不默认跳过 appendix、figure caption、table caption、footnote。
 - **把公式、图表、章节结构当成一等公民**：优先保留 LaTeX 公式、表格结构、图片相对位置，而不是只保留纯文本。
-- **结果可继续复用**：输出是 Markdown、assets 目录和 notes 文件，适合阅读、检索、二次编辑、知识库沉淀。
+- **结果可继续复用**：输出会被统一收纳到论文名称目录中，包含原论文、2 个 Markdown 文件和 1 个 assets 目录，适合阅读、检索、二次编辑、知识库沉淀。
+- **自带“剥洋葱式导读”**：在全文翻译文件中附加逐层导读，先讲动机和直觉，再拆核心公式，最后补全边缘推导。
 - **接受现实世界的脏输入**：支持 PDF、arXiv HTML、普通 HTML、LaTeX 源码；必要时允许 OCR 降级，但会显式标注风险。
 - **对研究者友好**：除了全文翻译，还会生成一份真的能用的阅读笔记，帮助判断论文价值、方法主线和后续选题。
 
 ## 它会产出什么
 
-默认会在原论文同一路径生成三类文件：
+默认会在原论文所在位置创建一个以论文名称命名的目录，并把所有文件收进去：
 
 ```text
-<paper_stem>.zh-CN.full.md
-<paper_stem>.zh-CN.notes.md
-<paper_stem>.assets/
+<paper_title_dir>/
+  <original_paper_filename>.pdf
+  <paper_stem>.zh-CN.full.md
+  <paper_stem>.zh-CN.notes.md
+  <paper_stem>.assets/
 ```
 
 典型结果像这样：
 
 ```text
-paper.pdf
-paper.zh-CN.full.md
-paper.zh-CN.notes.md
-paper.assets/
-  figure-01.png
-  figure-02.png
-  table-03.png
+ThinkRec - Thinking-based recommendation via LLM/
+  Yu 等 - 2026 - ThinkRec Thinking-based recommendation via LLM.pdf
+  Yu 等 - 2026 - ThinkRec Thinking-based recommendation via LLM.zh-CN.full.md
+  Yu 等 - 2026 - ThinkRec Thinking-based recommendation via LLM.zh-CN.notes.md
+  Yu 等 - 2026 - ThinkRec Thinking-based recommendation via LLM.assets/
+    figure-01.png
+    figure-02.png
+    table-03.png
 ```
 
 其中：
 
-- `full.md` 用于顺序阅读整篇中文论文
+- 原论文会被移动到论文名称目录中，避免原文和产物散落在不同位置
+- `full.md` 用于顺序阅读整篇中文论文，并在文末附带“剥洋葱式文献导读”
 - `notes.md` 用于快速抓核心问题、方法、实验结论和研究启发
 - `assets/` 用于保存图片、复杂表格截图或无法稳定重建的片段
+
+也就是说，**总共仍然只有两个 md**，但它们会和原论文一起放在论文名称目录中：
+
+- 一个是“全文翻译 + 剥洋葱式导读”的 full.md
+- 一个是独立的 notes.md
 
 ## 适合谁用
 
@@ -90,22 +104,43 @@ paper.assets/
 ```
 
 ```text
-处理这个 arXiv 论文链接，输出中文全文 md 和一份 notes 文件，资源文件放到同级 assets 目录。
+处理这个 arXiv 论文链接，输出中文全文 md 和一份 notes 文件，资源文件放到同级目录，论文名称命名目录。
 ```
 
 ```text
 对这篇论文做逐段翻译，不要省略 appendix，公式用 LaTeX，图表尽量原位保留。
 ```
 
+```text
+对这篇论文做全文翻译，并在 full.md 末尾追加“剥洋葱式文献导读”：先一句话讲实际问题，再用生活隐喻解释，再拆 1-2 个核心公式，最后补全剩余推导；总共还是只输出两个 md。
+```
+
+```text
+把这篇 PDF 剪切到一个以论文名命名的目录里，再输出全文翻译、notes 和 assets，所有文件都放在这个目录中。
+```
+
 ### 3. 拿到可直接使用的结果
 
 输出默认是：
 
-- 一份中文全文 Markdown
+- 一个以论文名称命名的目录
+- 一份被移动进去的原论文文件
+- 一份中文全文 Markdown（内含剥洋葱式文献导读）
 - 一份研究阅读笔记
 - 一个资源目录
 
-这意味着你不需要再手工整理一遍图、表、公式和笔记。
+这意味着你不需要再手工整理一遍原文、图、表、公式和笔记，它们天然已经被归档到一个目录里。
+
+## 剥洋葱式文献导读是什么
+
+它不是额外生成一篇“总结”，而是把导读嵌进全文翻译文件里，固定按 4 步展开：
+
+1. 全盘吸收与一句话总结：先说清楚“这段内容到底在解决什么实际问题”。
+2. 构建直觉与生活隐喻：强制用一个极通俗的生活场景来类比核心机制。
+3. 聚焦核心公式拆解：只挑 1 到 2 个最关键公式，并把符号和生活隐喻一一对上。
+4. 全盘扫荡与补全：再把剩余边缘公式和推导，像拼图一样补回主线。
+
+这个设计的目的不是“写得花哨”，而是降低阅读门槛。你可以先抓住直觉和主机制，再回头读论文正文和公式，不容易在一开始就被符号淹没。
 
 ## 设计原则
 
@@ -122,9 +157,11 @@ paper.assets/
 一个合格结果，至少应满足：
 
 - 可以从头到尾顺序阅读，而不会频繁跳失上下文
+- 原论文、译文、笔记、资源文件都位于同一个以论文名称命名的目录中
 - 主结构与原文一致，章节层级清楚
 - 图片、表格、公式大体放在正确阅读位置
 - appendix、caption、footnote、acknowledgement、references 不被默认漏掉
+- full.md 中包含完整的“剥洋葱式文献导读”四步结构
 - 对提取失败或 OCR 不稳的部分有明确标注
 - 笔记文件能帮助用户快速判断论文是否值得深读
 
