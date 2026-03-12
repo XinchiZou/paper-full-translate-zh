@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-111111.svg)
 ![Skill](https://img.shields.io/badge/Copilot-Skill-0A66C2.svg)
-![Output](https://img.shields.io/badge/output-2%20Markdown-0F766E.svg)
+![Output](https://img.shields.io/badge/output-2%20Markdown%20%2B%20Assets-0F766E.svg)
 ![Focus](https://img.shields.io/badge/focus-Full%20Paper%20Translation-9A3412.svg)
 
 这是一个面向 VS Code Copilot Agent 的技能仓库。
@@ -12,7 +12,7 @@
 它的目标不是“帮你总结一篇论文”，而是尽可能保真地完成这件事：
 
 - 把整篇论文翻译成中文 Markdown
-- 保留章节结构、图题、表格、公式、附录、脚注、参考文献
+- 保留章节结构、图片、图题、表格、公式、附录、脚注、参考文献
 - 同时生成一份真的有研究价值的 notes 文件
 - 自动按论文标题建目录，把原论文和产物放在一起
 
@@ -46,6 +46,7 @@ paper-full-translate-zh 反过来做：
   <original_paper_filename>.pdf
   <paper_stem>.zh-CN.full.md
   <paper_stem>.zh-CN.notes.md
+  <paper_stem>.assets/
 ```
 
 真实效果应该接近这样：
@@ -55,6 +56,9 @@ ThinkRec - Thinking-based recommendation via LLM/
   Yu et al. - 2026 - ThinkRec Thinking-based recommendation via LLM.pdf
   ThinkRec - Thinking-based recommendation via LLM.zh-CN.full.md
   ThinkRec - Thinking-based recommendation via LLM.zh-CN.notes.md
+  ThinkRec - Thinking-based recommendation via LLM.assets/
+    figure-01.png
+    figure-02.png
 ```
 
 其中：
@@ -62,16 +66,17 @@ ThinkRec - Thinking-based recommendation via LLM/
 - full.md：全文保真翻译，负责把正文重建完整
 - notes.md：开头先放剥洋葱式文献导读，后面接研究笔记
 - 原论文：直接放在同目录，避免原文和产物散落
+- assets：保存正文图片，以及无法稳定重建时的图表资源片段
 
-默认不导出图片文件，不创建 assets 目录。
-图像信息通过图号、图题和必要的文字说明保留下来，公式优先保留为 LaTeX，复杂表格优先重建为 Markdown 或 HTML。
+默认会导出图片文件，并在 full.md 中使用相对路径引用这些图片。
+图像信息通过图片本体、图号、图题和必要的上下文一起保留下来，公式优先保留为 LaTeX，复杂表格优先重建为 Markdown 或 HTML。
 
 ## 这不是普通 Prompt，而是一个研究工作流
 
 | 维度 | 普通论文翻译 Prompt | paper-full-translate-zh |
 | --- | --- | --- |
 | 目标 | 生成一份看起来像译文的内容 | 重建一份可追溯的全文中文 Markdown |
-| 结构 | 经常打散章节和附录 | 显式保留主结构、图题、表格、附录 |
+| 结构 | 经常打散章节、图片和附录 | 显式保留主结构、图片、图题、表格、附录 |
 | 公式 | 容易改变量名或直接丢失 | 优先保留 LaTeX、编号和上下文 |
 | 失败处理 | 常常静默省略 | 明确标记提取风险和降级位置 |
 | 结果形态 | 一次性聊天输出 | 可归档、可检索、可继续编辑的研究资产 |
@@ -88,7 +93,7 @@ ThinkRec - Thinking-based recommendation via LLM/
 ### 2. 结构化重建，而不是纯文本搬运
 
 - 保留章节层级
-- 保留图号和图题
+- 保留图片、图号和图题
 - 表格优先还原为 Markdown 或 HTML
 - 引用、脚注、附录尽量放回正确位置
 
@@ -137,15 +142,15 @@ notes.md 开头固定包含四步导读：
 你可以直接说：
 
 ```text
-把这篇 PDF 全文翻译成中文 Markdown，保留公式和图题，并在同目录生成阅读笔记。
+把这篇 PDF 全文翻译成中文 Markdown，保留图片、公式和图题，并在同目录生成阅读笔记。
 ```
 
 ```text
-处理这个 arXiv 论文链接，输出中文全文 md 和一份 notes 文件，放到论文名称命名目录里，不要导出图片 assets。
+处理这个 arXiv 论文链接，输出中文全文 md 和一份 notes 文件，放到论文名称命名目录里，并导出图片 assets。
 ```
 
 ```text
-对这篇论文做逐段翻译，不要省略 appendix，公式用 LaTeX，图题保留为文字说明。
+对这篇论文做逐段翻译，不要省略 appendix，公式用 LaTeX，图片和图题尽量原位保留。
 ```
 
 ```text
@@ -169,7 +174,7 @@ notes.md 开头固定包含四步导读：
 1. 确认论文来源和标题
 2. 创建以论文标题命名的目录
 3. 先建立结构映射，再逐段翻译
-4. 重建章节、图题、表格、公式和参考文献
+4. 重建章节、图片、图题、表格、公式和参考文献
 5. 生成 notes.md，并把剥洋葱式导读放在最前面
 
 它的设计哲学很简单：
@@ -185,9 +190,9 @@ notes.md 开头固定包含四步导读：
 一个靠谱结果，至少应该满足：
 
 - 可以从头到尾顺序阅读，不频繁跳失上下文
-- 原论文、full.md、notes.md 位于同一个论文目录
+- 原论文、full.md、notes.md、assets 位于同一个论文目录
 - 主结构与原文一致，章节层级清楚
-- 图题、表格、公式出现在大致正确的位置
+- 图片、图题、表格、公式出现在大致正确的位置
 - appendix、caption、footnote、acknowledgement、references 不被默认漏掉
 - notes.md 开头包含完整四步剥洋葱式导读
 - 提取不稳的地方有明确标注，而不是假装翻好了
