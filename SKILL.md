@@ -7,7 +7,7 @@ description: |
 license: MIT
 metadata:
   author: workspace
-  version: "0.5.2"
+  version: "0.5.3"
 ---
 
 # Paper Full Translate Zh

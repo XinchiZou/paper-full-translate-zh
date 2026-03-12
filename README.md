@@ -46,7 +46,7 @@ paper-full-translate-zh 反过来做：
   <original_paper_filename>.pdf
   <paper_stem>.zh-CN.full.md
   <paper_stem>.zh-CN.notes.md
-  <paper_stem>.assets/
+  assets/
 ```
 
 真实效果应该接近这样：
@@ -56,7 +56,7 @@ ThinkRec - Thinking-based recommendation via LLM/
   Yu et al. - 2026 - ThinkRec Thinking-based recommendation via LLM.pdf
   ThinkRec - Thinking-based recommendation via LLM.zh-CN.full.md
   ThinkRec - Thinking-based recommendation via LLM.zh-CN.notes.md
-  ThinkRec - Thinking-based recommendation via LLM.assets/
+  assets/
     figure-01.png
     figure-02.png
 ```
@@ -67,6 +67,20 @@ ThinkRec - Thinking-based recommendation via LLM/
 - notes.md：开头先放剥洋葱式文献导读，后面接研究笔记
 - 原论文：直接放在同目录，避免原文和产物散落
 - assets：保存正文图片，以及无法稳定重建时的图表资源片段
+
+## 示例实例
+
+仓库里现在带了一个仓库安全的示例目录：
+
+```text
+examples/
+  OneRec Unifying Retrieve and Rank with Generative Recommender and Iterative Preference Alignment/
+    README.md
+```
+
+这个示例用于说明 skill 的真实输出结构、交付边界和一个典型案例会包含哪些产物。
+
+出于公开仓库的版权与分发风险考虑，示例目录默认不直接附带原论文 PDF、全文译文、notes 和导出的图表资源；它保留的是案例说明与目录结构约定。你在自己的工作区里运行 skill 时，仍然会得到完整的论文目录、full.md、notes.md 和 assets。
 
 默认会导出图片文件，并在 full.md 中使用相对路径引用这些图片。
 图像信息通过图片本体、图号、图题和必要的上下文一起保留下来，公式优先保留为 LaTeX，复杂表格优先重建为 Markdown 或 HTML。
