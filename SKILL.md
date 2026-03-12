@@ -7,7 +7,7 @@ description: |
 license: MIT
 metadata:
   author: workspace
-  version: "0.5.0"
+  version: "0.5.2"
 ---
 
 # Paper Full Translate Zh
@@ -33,8 +33,14 @@ metadata:
 - 输出目录：<paper_title_dir>/
 - 原论文：移动后的原始文件名，保持扩展名不变
 - 全文翻译：<paper_stem>.zh-CN.full.md
-- 资源目录：<paper_stem>.assets/
+- 资源目录：assets/
 - 阅读笔记：<paper_stem>.zh-CN.notes.md
+
+资源目录命名补充规则：
+
+- 资源目录默认固定命名为 `assets/`，不要把长论文标题或 paper stem 再重复拼进资源目录名
+- 这样做的主要目的是降低 Windows 下的路径长度，避免 Markdown 预览、图片加载、文件复制或导出时触发路径过长问题
+- 若历史目录中已经存在旧命名资源目录且用户未要求迁移，可沿用旧目录；新产物默认优先使用短目录名 `assets/`
 
 目录命名规则：
 
@@ -118,7 +124,7 @@ metadata:
   <original_paper_filename>.pdf
   <paper_stem>.zh-CN.full.md
   <paper_stem>.zh-CN.notes.md
-  <paper_stem>.assets/
+  assets/
 ```
 
 ### 3. Build a Structural Map Before Translating
@@ -139,21 +145,40 @@ metadata:
 - 不允许先总结再“扩写成翻译”
 - 不允许跳过 appendix、figure caption、table caption、footnote 这类容易漏掉的部分
 
+实现建议：
+
+- 如果来源是结构化 HTML，或者论文包含大量公式、表格、图题、附录，需要重复解析同一来源，允许编写一次性的临时本地提取脚本来批量抽取章节、公式、表格、图题与图片清单
+- 临时脚本只是中间工具，不属于最终交付物；在产物生成完成后应删除，避免在工作区残留无关文件
+- 临时脚本应服务于“结构保真提取”，不要把它写成摘要生成器或自由改写器
+
 ### 4. Extract Figures, Tables, and Equations
 
 #### Figures
 
-- 提取所有正文图片，并保存到 <paper_stem>.assets/ 目录
+- 提取所有正文图片，并保存到 assets/ 目录
 - 文件名使用稳定顺序，例如 figure-01.png、figure-02.png
 - 在 Markdown 中用相对路径引用图片
 - 图片插入位置应尽量与原文相对位置一致，至少要与对应 caption 紧邻
 - 如果无法单独提取图片，但能从页面裁切获得可读版本，则保存裁切图，不要直接省略
+- 对双栏或多栏 PDF，必须先判断图片和 caption 所在栏，再按该栏的边界裁切；不要把相邻栏的正文段落一起裁进图片
+- 如果图位于右栏或左栏，不要为了“留白保险”横向扩到整页；允许保留少量页边空白，但不应包含无关正文、节标题、页码或参考文献正文
+- 完成裁切后，应至少再核对一次：导出的图片是否只包含目标图及其必要留白，而不包含相邻正文列
+- 对 PDF 来源，默认优先使用“页面区域渲染”来导出图，而不是直接导出原始 image XObject
+- 只有在确认 raw image XObject 与页面最终渲染结果一致时，才允许直接导出原始图片对象
+- 如果 PDF 图像对象带 soft mask、透明通道、叠加文字、矢量箭头、边框、标注或多图层合成效果，不要直接导出底层图片；应改为按图的边界框裁切页面并渲染
+- 页面区域渲染时，应关闭透明输出或显式铺白底，避免导出的 PNG 出现黑底、缺字、缺线框或透明区域显示错误
+- 若一张图由多个页面对象共同构成，导出结果必须以 PDF 阅读器中的最终可见效果为准，而不是以单个底层对象为准
+- 如果无法稳定确定图的边界框，允许扩大裁切范围并在结果中保留少量页背景，也不要错误导出成黑底或缺损图
+- 在 Windows 环境下，若论文目录名较长，务必优先使用短资源目录 `assets/` 与简短图片文件名，例如 `assets/figure-01.png`，避免因绝对路径过长导致 Markdown 预览无法显示图片
 
 #### Tables
 
 - 优先转成 Markdown 表格
 - 如果原表格过宽、跨行跨列复杂或 Markdown 会严重失真，则改用 HTML table
 - 如果仍无法可靠重建，则用文字概括表格结构与关键信息，并明确标记该处建议人工复核
+- 如果表格最终需要以截图形式保留，裁切范围必须覆盖 caption 与完整表体，但不要把表后正文段落、下一小节标题或页码上方的大段正文一起裁入
+- 如果表格跨页，不要只保留其中一页；应把各页表体拼接成同一张图，或按顺序保留多张表格图片并在 Markdown 中连续引用
+- 对截图保留的表格，交付前至少核对一次表头、末行和 caption 是否都完整出现，避免出现只截到半张表或把后续正文误当作表的一部分
 
 #### Equations
 
@@ -198,7 +223,7 @@ metadata:
 ## 1 引言
 ...
 
-![Figure 1: ...](<paper_stem>.assets/figure-01.png)
+![Figure 1: ...](assets/figure-01.png)
 
 $$
 ...
@@ -214,6 +239,7 @@ $$
 - 图片和表格尽量放在原文首次引用之后的近邻位置
 - 使用相对路径，确保 Markdown 在同目录打开时可直接显示资源
 - 如果原文有编号标题，尽量保留编号
+- 若在 VS Code 或 Windows 中预览 Markdown，优先使用短相对路径，例如 `assets/figure-01.png`，不要让资源目录名随论文标题无限增长
 
 ### 7. Add the Onion-Peeling Paper Guide
 
@@ -348,6 +374,7 @@ $$
 
 - 先做文本层提取，再与页面视觉结构核对
 - 对多栏、脚注、浮动图表额外检查，避免阅读顺序错乱
+- 对图片导出，优先验证是否存在 transparency / smask / 多对象叠加；一旦存在，必须改用页面裁切渲染而不是 raw image export
 
 ### If the source is a scanned PDF
 
@@ -371,6 +398,7 @@ $$
 - 即使有个别提取失败之处，也有明确标注与回退内容
 - 用户在读完 notes.md 开头的“剥洋葱式文献导读”后，能够先抓住直觉，再回到公式与全文
 - 笔记部分能够帮助用户快速判断论文价值、方法逻辑与研究启发
+- PDF 导出的图片应与 PDF 阅读器中的最终显示效果一致，不应出现因透明蒙版、黑底或图层丢失导致的失真
 
 ## Example Prompts
 
