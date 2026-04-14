@@ -1,9 +1,6 @@
 ---
 name: paper-full-translate-zh
-description: |
-  将用户提供的论文完整翻译为中文 Markdown，尽量不遗漏正文内容，保留图片、图题、表格与公式，
-  并创建一个以论文名称命名的目录，将原论文与产物统一收纳在其中。
-  Use when: 用户要求逐段全文翻译论文、保留图片图表公式、输出 Markdown、并附带研究笔记。
+description: "Translate academic papers into structured Chinese Markdown with full fidelity — preserving figures, captions, tables, equations, and appendices. Creates a paper-title directory containing the original file, zh-CN full translation, research notes with an onion-peeling literature guide (剥洋葱式文献导读), and exported image assets. Use when: user requests full-text paper translation to Chinese, paragraph-by-paragraph academic paper translation, preserve figures/tables/formulas in Markdown output, organized research asset directory, or 全文翻译论文并保留图片图表公式输出 Markdown。"
 license: MIT
 metadata:
   author: workspace
@@ -12,201 +9,108 @@ metadata:
 
 # Paper Full Translate Zh
 
-你负责把用户提供的论文整理为可读、可追溯的中文 Markdown 版本，并补充一份研究笔记。
-全文翻译文件只负责保真重建正文；“剥洋葱式文献导读”需要放在 notes.md 的最前面，而不是写入 full.md。
+Translate user-provided papers into readable, traceable Chinese Markdown with supplementary research notes.
+The full translation file (full.md) faithfully reconstructs the body text; the onion-peeling literature guide (剥洋葱式文献导读) belongs at the top of notes.md, not in full.md.
 
-最终产物默认包括：
-
-- 一个以论文名称命名的目录
-- 被移动进该目录中的原论文文件
-- 位于该目录中的全文翻译 Markdown
-- 位于该目录中的阅读笔记 Markdown
-- 位于该目录中的资源目录，用于保存图片或无法可靠重建的图表片段
-
-总输出仍然只有两个 Markdown 文件：
-
-- 全文翻译 Markdown
-- 阅读笔记 Markdown
-
-默认命名规则：
-
-- 输出目录：<paper_title_dir>/
-- 原论文：移动后的原始文件名，保持扩展名不变
-- 全文翻译：<paper_stem>.zh-CN.full.md
-- 资源目录：assets/
-- 阅读笔记：<paper_stem>.zh-CN.notes.md
-
-资源目录命名补充规则：
-
-- 资源目录默认固定命名为 `assets/`，不要把长论文标题或 paper stem 再重复拼进资源目录名
-- 这样做的主要目的是降低 Windows 下的路径长度，避免 Markdown 预览、图片加载、文件复制或导出时触发路径过长问题
-- 若历史目录中已经存在旧命名资源目录且用户未要求迁移，可沿用旧目录；新产物默认优先使用短目录名 `assets/`
-
-目录命名规则：
-
-- 优先使用论文标题生成目录名
-- 若无法稳定取得论文标题，则回退到原文件名 stem
-- 目录名需要做文件系统安全化处理，移除 Windows 非法路径字符
-- 如果目标目录已存在，则复用该目录，不重复创建平行副本
-
-默认情况下，如果用户提供的是本地论文文件，应将原文件剪切到这个目录中，而不是保留在旧位置。
-
-## When to Apply
-
-在以下场景使用本 skill：
-
-- 用户要求把论文全文翻译成中文
-- 用户要求保留图片、图题、表格、公式
-- 用户要求输出为 Markdown 文件
-- 用户要求把结果与原论文放到同一个目录中
-- 用户要求按论文名称创建目录来收纳原文与产物
-- 用户要求额外生成读书笔记、总结、研究启发
-
-在以下场景不要优先使用本 skill：
-
-- 用户只要摘要翻译或只要简短总结
-- 用户只要文献综述，不需要逐段全文保真翻译
-- 用户没有提供论文文件、可访问链接或明确来源
-
-## Required Outcome
-
-你需要产出三个层面的结果：
-
-1. 一个以论文名称命名的统一输出目录
-2. 结构保真的全文中文翻译
-3. 图片、图题、表格、公式的完整保留或可追溯降级保留
-4. 位于 notes.md 最前面的“剥洋葱式文献导读”
-5. 一份可直接用于阅读和研究选题的笔记总结
-
-## Inputs to Confirm
-
-如果用户没有明确说明，先补齐以下输入；若任务能继续推进，则采用默认值并在结果中注明：
-
-- 论文来源：本地 PDF、arXiv 页面、HTML、LaTeX 源码或其他链接
-- 目录命名：使用论文标题，还是强制使用用户给定名称
-- 输出形式：只要中文，还是中英对照
-- 笔记形式：单独笔记文件，还是附在全文翻译末尾
-- 是否需要翻译参考文献条目标题
-- 是否允许对扫描版 PDF 使用 OCR 作为降级方案
-
-默认值：
-
-- 目录默认使用论文标题命名；若标题不可得，则使用原文件名 stem
-- 输出为纯中文，不做中英对照
-- 笔记单独存为 .notes.md 文件
-- “剥洋葱式文献导读”默认放在 notes.md 最前面
-- 默认导出图片文件，并创建 assets/ 目录
-- 参考文献保留原始引用串，不强行翻译作者名与出版信息
-- 遇到扫描版或提取质量差的 PDF 时，允许 OCR，但必须标注风险
-
-## Workflow
-
-### 1. Validate the Source
-
-- 只处理用户提供的本地文件或用户明确指定的论文链接
-- 先识别来源类型：PDF、arXiv HTML、普通 HTML、LaTeX 源码
-- 优先级默认如下：结构化 HTML 或 LaTeX > 可提取文本的 PDF > OCR PDF
-- 如果存在结构化来源与 PDF，同步核对标题、作者、章节，避免版本错配
-
-### 2. Create the Paper Directory First
-
-- 在开始生成任何产物前，先确定论文标题
-- 用论文标题生成一个文件系统安全的目录名 <paper_title_dir>
-- 在原论文所在目录下创建这个目录
-- 如果输入是本地文件，则把原论文文件剪切到该目录中
-- 如果输入是远程链接，则将下载得到的原论文文件直接保存到该目录中
-- 所有后续产物都必须写入该目录内，不要散落在上级目录
-
-目录布局默认如下：
+## Output Structure
 
 ```text
 <paper_title_dir>/
   <original_paper_filename>.pdf
   <paper_stem>.zh-CN.full.md
   <paper_stem>.zh-CN.notes.md
-  assets/
+  assets/                          # always named assets/ — keep paths short
 ```
 
-### 3. Build a Structural Map Before Translating
+**Naming rules:**
+- Directory: paper title (filesystem-safe); falls back to original filename stem if title is unavailable
+- `assets/` is a fixed short name — never embed the paper title in the assets directory path
+- Local paper files are moved (not copied) into the directory; remote papers are saved directly there
+- Reuse existing directories; do not create parallel duplicates
 
-在真正翻译前，先建立论文结构清单：
+## When to Apply
 
-- 标题、作者、摘要、关键词
-- 各级章节标题
-- 正文段落顺序
-- 公式编号与位置
-- 图片编号、标题、引用位置
-- 表格编号、标题、列结构
-- 脚注、附录、致谢、参考文献
+**Use** when the user asks to translate a full paper to Chinese, preserve figures/tables/equations, output as Markdown, or organize results into a named directory with reading notes.
 
-质量要求：
+**Do not use** for summary-only translation, literature reviews without full-text fidelity, or when no paper source is provided.
 
-- 任何进入最终译文的段落，都必须能回溯到原文中的一个明确位置
-- 不允许先总结再“扩写成翻译”
-- 不允许跳过 appendix、figure caption、table caption、footnote 这类容易漏掉的部分
+## Defaults & Confirmation Points
 
-实现建议：
+Use these defaults if the user does not specify; note them in the output. On first use with a new user, confirm items marked ⚠ to avoid rework:
 
-- 如果来源是结构化 HTML，或者论文包含大量公式、表格、图题、附录，需要重复解析同一来源，允许编写一次性的临时本地提取脚本来批量抽取章节、公式、表格、图题与图片清单
-- 临时脚本只是中间工具，不属于最终交付物；在产物生成完成后应删除，避免在工作区残留无关文件
-- 临时脚本应服务于“结构保真提取”，不要把它写成摘要生成器或自由改写器
+| Input | Default | Confirm? |
+|-------|---------|----------|
+| Directory naming | Paper title → filename stem fallback | ⚠ user may want a custom name |
+| Output language | Chinese only (no bilingual) | ⚠ user may want bilingual |
+| Notes format | Separate .notes.md file | ⚠ user may want merged single file |
+| Onion guide | Top of notes.md | |
+| Image export | Export to `assets/` with relative paths | |
+| References | Keep original citation strings | ⚠ user may want titles translated |
+| OCR for scanned PDFs | Allowed, marked with risk warning | ⚠ confirm tolerance |
+
+## Workflow
+
+### 1. Validate the Source
+
+Identify source type and select extraction strategy:
+
+| Priority | Source | Notes |
+|----------|--------|-------|
+| 1 | Structured HTML / LaTeX | Best fidelity |
+| 2 | Text-extractable PDF | Cross-check with visual layout for multi-column/floats |
+| 3 | Scanned PDF (OCR) | Warn user about accuracy |
+
+If both structured source and PDF exist, cross-check title/author/sections to avoid version mismatch.
+
+### 2. Create the Paper Directory
+
+Before generating any output:
+1. Determine the paper title
+2. Create a filesystem-safe directory from it
+3. Move or save the source file into the directory
+4. All subsequent outputs go inside this directory
+
+### 3. Build a Structural Map
+
+Before translating, inventory the full paper structure:
+- Title, authors, abstract, keywords
+- All section headings and their hierarchy
+- Equation numbers and positions
+- Figure/table numbers, captions, and reference locations
+- Footnotes, appendices, acknowledgements, references
+
+Every translated paragraph must trace to a specific source location. No summarize-then-expand. No silent omissions. For complex papers with many figures/tables/equations, a temporary extraction script is acceptable as an intermediate tool (delete it after delivery).
 
 ### 4. Extract Figures, Tables, and Equations
 
-#### Figures
+See [EXTRACTION.md](EXTRACTION.md) for detailed extraction rules, multi-column handling, and fallback strategies.
 
-- 提取所有正文图片，并保存到 assets/ 目录
-- 文件名使用稳定顺序，例如 figure-01.png、figure-02.png
-- 在 Markdown 中用相对路径引用图片
-- 图片插入位置应尽量与原文相对位置一致，至少要与对应 caption 紧邻
-- 如果无法单独提取图片，但能从页面裁切获得可读版本，则保存裁切图，不要直接省略
-- 对双栏或多栏 PDF，必须先判断图片和 caption 所在栏，再按该栏的边界裁切；不要把相邻栏的正文段落一起裁进图片
-- 如果图位于右栏或左栏，不要为了“留白保险”横向扩到整页；允许保留少量页边空白，但不应包含无关正文、节标题、页码或参考文献正文
-- 完成裁切后，应至少再核对一次：导出的图片是否只包含目标图及其必要留白，而不包含相邻正文列
-- 对 PDF 来源，默认优先使用“页面区域渲染”来导出图，而不是直接导出原始 image XObject
-- 只有在确认 raw image XObject 与页面最终渲染结果一致时，才允许直接导出原始图片对象
-- 如果 PDF 图像对象带 soft mask、透明通道、叠加文字、矢量箭头、边框、标注或多图层合成效果，不要直接导出底层图片；应改为按图的边界框裁切页面并渲染
-- 页面区域渲染时，应关闭透明输出或显式铺白底，避免导出的 PNG 出现黑底、缺字、缺线框或透明区域显示错误
-- 若一张图由多个页面对象共同构成，导出结果必须以 PDF 阅读器中的最终可见效果为准，而不是以单个底层对象为准
-- 如果无法稳定确定图的边界框，允许扩大裁切范围并在结果中保留少量页背景，也不要错误导出成黑底或缺损图
-- 在 Windows 环境下，若论文目录名较长，务必优先使用短资源目录 `assets/` 与简短图片文件名，例如 `assets/figure-01.png`，避免因绝对路径过长导致 Markdown 预览无法显示图片
+**Key principles:**
+- **Figures**: export to `assets/figure-NN.png` using page-area rendering (not raw image objects); verify crops contain only the target figure
+- **Tables**: Markdown table → HTML table → annotated screenshot, in order of preference
+- **Equations**: preserve as LaTeX (`$...$` / `$$...$$`); keep original variable names and numbering
+- **Degradation**: if any element cannot be faithfully extracted, keep a screenshot or fragment and mark it explicitly — never silently drop content
 
-#### Tables
+**Quick figure extraction example (PyMuPDF):**
 
-- 优先转成 Markdown 表格
-- 如果原表格过宽、跨行跨列复杂或 Markdown 会严重失真，则改用 HTML table
-- 如果仍无法可靠重建，则用文字概括表格结构与关键信息，并明确标记该处建议人工复核
-- 如果表格最终需要以截图形式保留，裁切范围必须覆盖 caption 与完整表体，但不要把表后正文段落、下一小节标题或页码上方的大段正文一起裁入
-- 如果表格跨页，不要只保留其中一页；应把各页表体拼接成同一张图，或按顺序保留多张表格图片并在 Markdown 中连续引用
-- 对截图保留的表格，交付前至少核对一次表头、末行和 caption 是否都完整出现，避免出现只截到半张表或把后续正文误当作表的一部分
-
-#### Equations
-
-- 优先保留为 LaTeX 形式的行内公式与块级公式
-- 原始变量名、上下标、希腊字母、编号必须保持一致，不要意译
-- 块级公式使用 $$...$$
-- 行内公式使用 $...$
-- 如果公式原本是图片或提取失败，先尝试手工转写为 LaTeX；若仍不可靠，则保留公式图片并标记该处为降级保留
+```python
+import fitz
+page = fitz.open("paper.pdf")[page_num]
+clip = fitz.Rect(x0, y0, x1, y1)  # figure bounding box
+pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip, alpha=False)
+pix.save("assets/figure-01.png")
+```
 
 ### 5. Translate Without Omissions
 
-翻译时必须遵守以下原则：
-
-- 逐段推进，不跳段，不合并多段后只写摘要式中文
-- 所有章节标题、图题、表题、脚注、附录标题都要处理
-- 公式本身不翻译，只翻译公式前后的说明文字
-- 代码、伪代码、算法名、数据集名、模型名保持原文；必要时可在后面补一个简短中文解释
-- 专有名词首次出现时可写成“中文（英文）”，后续保持一致
-- 遇到拿不准的短语，不要编造；保留原词并在邻近处给出谨慎中文释义
-
-特别要求：
-
-- 目标是全文翻译，不是摘要翻译
-- 如果某段无法可靠提取，必须显式标注“此处原文提取不稳定，建议人工复核”，而不是默默省略
+- Translate paragraph by paragraph — no skipping, no merging multiple paragraphs into summary-style Chinese
+- Process all section headings, figure captions, table captions, footnotes, appendices
+- Do NOT translate: equations, code, pseudocode, algorithm names, dataset names, model names (add brief Chinese gloss after if needed)
+- Technical terms on first occurrence: "中文（English）"; keep consistent afterwards
+- Uncertain phrases: preserve the original and add a cautious Chinese interpretation nearby
+- If a passage cannot be reliably extracted, insert: "此处原文提取不稳定，建议人工复核"
 
 ### 6. Reconstruct the Markdown
-
-全文 Markdown 的推荐结构：
 
 ```markdown
 # 中文标题
@@ -225,194 +129,50 @@ metadata:
 
 ![Figure 1: ...](assets/figure-01.png)
 
-$$
-...
-$$
+$$...$$
 
 ## 参考文献
 ...
 ```
 
-重建时注意：
+Preserve original section hierarchy and numbering. Place figures and tables near their first in-text reference.
 
-- 保持原文章节层级，不要随意改写结构
-- 图片和表格尽量放在原文首次引用之后的近邻位置
-- 使用相对路径，确保 Markdown 在同目录打开时可直接显示资源
-- 如果原文有编号标题，尽量保留编号
-- 若在 VS Code 或 Windows 中预览 Markdown，优先使用短相对路径，例如 `assets/figure-01.png`，不要让资源目录名随论文标题无限增长
+### 7. Write the Onion-Peeling Guide and Notes
 
-### 7. Add the Onion-Peeling Paper Guide
+See [NOTES_TEMPLATE.md](NOTES_TEMPLATE.md) for the complete specification and template.
 
-在 notes.md 的最前面追加一个独立章节，标题固定为：
+The onion-peeling guide (剥洋葱式文献导读) goes at the top of notes.md with four fixed steps:
+1. **Context**: one sentence on the real problem being solved
+2. **Grounding**: a concrete everyday metaphor for the core mechanism
+3. **Core Focus**: deconstruct 1–2 key equations, mapping symbols to the metaphor
+4. **Exhaustive Mapping**: fill in remaining formulas and definitions into the main story
 
-```markdown
-## 剥洋葱式文献导读
-```
+The rest of notes.md contains research notes: metadata, core problem, method overview, contributions, experiments, strengths/limitations, relevance, and follow-up questions.
 
-该章节必须包含以下 4 步，且顺序固定：
+### 8. Completion Checks
 
-#### 第 1 步：全盘吸收与一句话总结（Context）
-
-- 阅读整篇论文后，提炼该部分内容的核心动机
-- 用一句话说明“这段内容在解决什么实际问题”
-- 这句话必须落到实际问题，而不是泛泛复述论文标题
-
-#### 第 2 步：构建直觉与生活隐喻（Grounding）
-
-- 暂时抛开学术名词
-- 强制使用一个极其通俗的生活场景来类比核心机制，例如水管分流、切蛋糕、图书馆借书、快递分拣、餐厅排队等
-- 隐喻必须覆盖论文的主要运行逻辑，而不是只类比局部现象
-
-#### 第 3 步：聚焦核心公式拆解（Core Focus）
-
-- 挑出最能代表论文机制的 1 到 2 个核心公式
-- 把公式中的关键符号与第 2 步的生活隐喻做一一对应
-- 用大白话解释这些符号在现实场景里分别代表什么
-- 说明这些公式的物理意义、逻辑意义或优化目标
-
-#### 第 4 步：全盘扫荡与补全（Exhaustive Mapping）
-
-- 在讲清楚核心逻辑之后，再把剩余边缘公式、辅助定义或推导步骤逐步补进整体框架
-- 解释这些部分分别在整个方法里承担什么角色
-- 强调它们是“补全主线”而不是另起一套解释
-
-约束要求：
-
-- 这部分必须写在 notes.md 的最前面，放在其他笔记内容之前
-- 这部分不得写入 full.md，也不得新建第三个 Markdown 文件
-- 语气应偏讲解，不要写成论文式摘要复述
-- 隐喻必须真正可理解，避免使用新的抽象术语去解释旧术语
-- 核心公式只能选 1 到 2 个，避免把“核心公式拆解”写成公式流水账
-
-### 8. Write the Notes File
-
-笔记文件要面向研究阅读，而不是重复全文翻译。其顺序应当是：
-
-1. 先写“剥洋葱式文献导读”
-2. 再写常规研究笔记
-
-除导读部分外，笔记至少包含：
-
-- 论文基本信息
-- 一句话核心问题
-- 方法主线
-- 主要贡献
-- 关键实验结论
-- 关键公式或机制
-- 优点
-- 局限
-- 与当前研究主题的关系
-- 值得追的后续问题
-
-推荐模板：
-
-```markdown
-# 论文阅读笔记
-
-## 剥洋葱式文献导读
-
-### 第 1 步：全盘吸收与一句话总结（Context）
-
-### 第 2 步：构建直觉与生活隐喻（Grounding）
-
-### 第 3 步：聚焦核心公式拆解（Core Focus）
-
-### 第 4 步：全盘扫荡与补全（Exhaustive Mapping）
-
-## 基本信息
-- 标题：
-- 作者：
-- 年份：
-- 来源：
-
-## 一句话总结
-
-## 研究问题
-
-## 方法概览
-
-## 主要贡献
-1. 
-2. 
-3. 
-
-## 实验与结果
-
-## 关键点摘录
-
-## 局限与风险
-
-## 对我当前课题的启发
-
-## 后续可追论文
-```
-
-### 9. Perform Completion Checks
-
-交付前逐项检查：
-
-- 章节数量与原文主结构是否一致
-- 是否漏掉摘要、附录、图题、表题、脚注、致谢、参考文献
-- 原论文文件是否已经移动到论文名称目录中
-- full.md、notes.md、assets 和原论文是否都位于同一个论文名称目录中
-- 所有图片链接是否存在且可相对访问
-- 表格是否可读
-- 公式是否保持原义和排版边界
-- “剥洋葱式文献导读”是否位于 notes.md 最前面
-- 导读部分是否完整覆盖 4 个步骤
-- 输出文件是否与原论文位于同一目录
-- 是否对所有无法可靠提取的部分做了显式标注
+- [ ] Section count matches original structure
+- [ ] No missing abstract, appendix, captions, footnotes, acknowledgements, references
+- [ ] Original paper file moved into the directory
+- [ ] full.md, notes.md, and assets/ all in the same directory
+- [ ] All image links resolve with relative paths
+- [ ] Tables readable, equations preserve original meaning
+- [ ] Onion-peeling guide at the top of notes.md with all 4 steps complete
+- [ ] All unreliable extractions explicitly marked
 
 ## Decision Rules
 
-### If the source is arXiv
-
-- 优先使用结构化页面或 LaTeX/HTML 内容提取正文与公式
-- 使用 PDF 仅作为核对图片编号、分页和可能遗漏内容的补充来源
-
-### If the source is a normal PDF with extractable text
-
-- 先做文本层提取，再与页面视觉结构核对
-- 对多栏、脚注、浮动图表额外检查，避免阅读顺序错乱
-- 对图片导出，优先验证是否存在 transparency / smask / 多对象叠加；一旦存在，必须改用页面裁切渲染而不是 raw image export
-
-### If the source is a scanned PDF
-
-- 明确告知会使用 OCR，准确率可能下降
-- 优先保证不遗漏内容，其次再优化排版
-- 不确定的内容要保留原截图或原文片段用于人工复核
-
-### If figures or equations cannot be reconstructed perfectly
-
-- 允许降级为截图或原始片段保留
-- 不允许静默丢弃
-- 在 Markdown 中注明该元素采用降级保留
-
-## Output Standard
-
-优秀结果应满足：
-
-- 用户能直接打开 Markdown 顺序阅读整篇中文论文
-- 用户能在一个以论文名称命名的目录中同时找到原文、全文译文、笔记和资源文件
-- 图片、图题、表格、公式在阅读位置上基本正确
-- 即使有个别提取失败之处，也有明确标注与回退内容
-- 用户在读完 notes.md 开头的“剥洋葱式文献导读”后，能够先抓住直觉，再回到公式与全文
-- 笔记部分能够帮助用户快速判断论文价值、方法逻辑与研究启发
-- PDF 导出的图片应与 PDF 阅读器中的最终显示效果一致，不应出现因透明蒙版、黑底或图层丢失导致的失真
+| Scenario | Action |
+|----------|--------|
+| arXiv source | Prefer structured HTML/LaTeX for text; use PDF for image cross-checking |
+| Normal PDF with text | Extract text first, cross-check visual layout for multi-column and floats |
+| Scanned PDF | Warn about OCR accuracy; prioritize completeness over formatting |
+| Imperfect figure/equation | Degrade to screenshot with annotation; never silently drop |
 
 ## Example Prompts
 
 - 把这篇 PDF 收进一个以论文名命名的目录里，原文件剪切进去，再生成全文中文 Markdown、notes 和 assets。
 - 处理这个 arXiv 论文链接，创建论文名称目录，并把下载的原论文、中文全文 md、notes 文件和 assets 一起放进去。
-- 对这篇论文做逐段翻译，不要省略 appendix，公式用 LaTeX，图表尽量原位保留，所有结果与原论文放在同一个论文名称目录里。
-- 在 notes.md 最前面追加“剥洋葱式文献导读”，但总共仍然只输出 full.md 和 notes.md 两个文件。
+- 对这篇论文做逐段翻译，不要省略 appendix，公式用 LaTeX，图表尽量原位保留。
+- Translate this paper to Chinese Markdown, keep all figures and equations, organize into a named directory.
 
-## Weak Points to Clarify with the User
-
-当首次为某个用户执行此 skill 时，优先确认下面几个容易引发返工的问题：
-
-- 参考文献部分是保留原始英文，还是连标题一起翻译
-- 最终要单独两份文件，还是全文翻译和笔记合并成一份
-- 目录名是使用论文标题，还是使用用户给定的名称
-- 对扫描版 PDF 的 OCR 误差是否接受
-- 是否需要中英对照版本而不是纯中文版本
